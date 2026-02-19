@@ -273,8 +273,16 @@ class AgentFactory:
         self.api_key = api_key
         self.output_dir = Path(output_dir) if output_dir else AGENTS_DIR
 
-    def create(self, role_description: str, instructions: str | None = None) -> dict[str, Any]:
-        """Generate an agent and return a summary dict."""
+    def create_agent(
+        self,
+        role_description: str,
+        instructions: str | None = None,
+    ) -> dict[str, Any]:
+        """
+        Generate an agent from a role and optional instructions.
+        Takes both role and instructions; instructions are woven into the AI prompt
+        and into the agent's instructions.md so the agent is tailored accordingly.
+        """
         return create_agent(
             role_description,
             instructions=instructions,
@@ -283,9 +291,13 @@ class AgentFactory:
             output_dir=self.output_dir,
         )
 
-    def create_agent(self, role_description: str, instructions: str | None = None) -> dict[str, Any]:
-        """Convenience alias for create(): generate an agent and return a summary dict."""
-        return self.create(role_description, instructions=instructions)
+    def create(
+        self,
+        role_description: str,
+        instructions: str | None = None,
+    ) -> dict[str, Any]:
+        """Alias for create_agent()."""
+        return self.create_agent(role_description, instructions=instructions)
 
     def list_agents(self) -> list[str]:
         """Return names of all generated agents."""
