@@ -1,0 +1,12 @@
+{
+  "agent_name": "{{ agent_name }}",
+  "display_name": "{{ display_name }}",
+  "tagline": "{{ tagline }}",
+  "domain": "{{ domain }}",
+  "tone": "{{ tone }}",
+  "generated_at": "{{ generated_at }}",
+  "primary_tasks": {{ primary_tasks | tojson(indent=4) }},
+  "tools": {{ tools | tojson(indent=4) }},
+  "constraints": {{ constraints | tojson(indent=4) }},
+  "example_prompts": {{ example_prompts | tojson(indent=4) }}
+}

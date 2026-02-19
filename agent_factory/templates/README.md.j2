@@ -1,0 +1,48 @@
+# 🤖 {{ display_name }}
+
+> {{ tagline }}
+
+**Domain:** {{ domain }}
+**Tone:** {{ tone }}
+**Generated:** {{ generated_at }}
+
+---
+
+## Quick Start
+
+```bash
+# Set your API key
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Run interactively
+python run_agent.py
+
+# Run with a single prompt
+python run_agent.py "Your question here"
+```
+
+## What This Agent Does
+
+{% for task in primary_tasks %}
+- {{ task }}
+{% endfor %}
+
+## Files in This Folder
+
+| File                  | Purpose                                      |
+|-----------------------|----------------------------------------------|
+| `instructions.md`    | System prompt loaded by the execution script |
+| `metadata.json`      | Structured metadata for programmatic access  |
+| `run_agent.py`       | Standalone script to interact with the agent |
+| `generation_data.json` | Raw API output used to build this folder   |
+| `README.md`          | This file                                    |
+
+## Example Prompts
+
+{% for prompt in example_prompts %}
+{{ loop.index }}. {{ prompt }}
+{% endfor %}
+
+---
+
+*Built with [Agent Factory](../../../README.md)*

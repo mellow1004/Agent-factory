@@ -1,0 +1,33 @@
+# {{ display_name }}
+
+> {{ tagline }}
+
+---
+
+{{ instructions }}
+
+---
+
+## Primary Tasks
+
+{% for task in primary_tasks %}
+- {{ task }}
+{% endfor %}
+
+## Tools & Capabilities
+
+{% for tool in tools %}
+- {{ tool }}
+{% endfor %}
+
+## Constraints & Guardrails
+
+{% for constraint in constraints %}
+- {{ constraint }}
+{% endfor %}
+
+## Example Prompts
+
+{% for prompt in example_prompts %}
+{{ loop.index }}. "{{ prompt }}"
+{% endfor %}
