@@ -72,12 +72,20 @@ _SYSTEM_PROMPT = textwrap.dedent("""\
 """)
 
 
-def _build_user_prompt(role_description: str) -> str:
-    return (
+def _build_user_prompt(role_description: str, instructions: str | None = None) -> str:
+    prompt = (
         f"Design an agent definition for the following role:\n\n"
         f"\"{role_description}\"\n\n"
-        f"Respond with the JSON object only."
     )
+    if instructions:
+        prompt += (
+            f"The user has also provided the following instructions. Weave these into the agent's "
+            f"behavior, goals, and expertise. Reflect them in the \"instructions\" field (the text that "
+            f"will go into instructions.md) so the final agent behaves accordingly:\n\n"
+            f"\"\"\"\n{instructions}\n\"\"\"\n\n"
+        )
+    prompt += "Respond with the JSON object only."
+    return prompt
 
 
 # ---------------------------------------------------------------------------
@@ -87,11 +95,12 @@ def _build_user_prompt(role_description: str) -> str:
 def _call_anthropic(
     role_description: str,
     *,
+    instructions: str | None = None,
     model: str = DEFAULT_MODEL,
     api_key: str | None = None,
     max_tokens: int = 4096,
 ) -> dict[str, Any]:
-    """Send the role description to Anthropic and parse the JSON response."""
+    """Send the role description (and optional user instructions) to Anthropic and parse the JSON response."""
     client = Anthropic(api_key=api_key)  # uses ANTHROPIC_API_KEY env var if None
 
     message = client.messages.create(
@@ -99,7 +108,7 @@ def _call_anthropic(
         max_tokens=max_tokens,
         system=_SYSTEM_PROMPT,
         messages=[
-            {"role": "user", "content": _build_user_prompt(role_description)},
+            {"role": "user", "content": _build_user_prompt(role_description, instructions)},
         ],
     )
 
@@ -264,14 +273,19 @@ class AgentFactory:
         self.api_key = api_key
         self.output_dir = Path(output_dir) if output_dir else AGENTS_DIR
 
-    def create(self, role_description: str) -> dict[str, Any]:
+    def create(self, role_description: str, instructions: str | None = None) -> dict[str, Any]:
         """Generate an agent and return a summary dict."""
         return create_agent(
             role_description,
+            instructions=instructions,
             model=self.model,
             api_key=self.api_key,
             output_dir=self.output_dir,
         )
+
+    def create_agent(self, role_description: str, instructions: str | None = None) -> dict[str, Any]:
+        """Convenience alias for create(): generate an agent and return a summary dict."""
+        return self.create(role_description, instructions=instructions)
 
     def list_agents(self) -> list[str]:
         """Return names of all generated agents."""
@@ -286,12 +300,13 @@ class AgentFactory:
 def create_agent(
     role_description: str,
     *,
+    instructions: str | None = None,
     model: str = DEFAULT_MODEL,
     api_key: str | None = None,
     output_dir: Path | str | None = None,
 ) -> dict[str, Any]:
     """
-    One-call convenience function: describe a role → get an agent folder.
+    One-call convenience function: describe a role (and optional instructions) → get an agent folder.
 
     Returns a dict with keys:
         agent_name, display_name, agent_dir, files_written
@@ -299,13 +314,25 @@ def create_agent(
     output_path = Path(output_dir) if output_dir else AGENTS_DIR
 
     # 1. Generate structured agent definition via the API
-    agent_data = _call_anthropic(role_description, model=model, api_key=api_key)
+    agent_data = _call_anthropic(
+        role_description,
+        instructions=instructions,
+        model=model,
+        api_key=api_key,
+    )
     agent_name = agent_data["agent_name"]
 
-    # 2. Render templates with the generated data
+    # 2. Weave user instructions into the agent's instructions.md if provided
+    if instructions:
+        existing = agent_data.get("instructions", "") or ""
+        agent_data["instructions"] = (
+            f"{existing.rstrip()}\n\n---\n\n## Användarens instruktioner\n\n{instructions}"
+        )
+
+    # 3. Render templates with the generated data
     rendered = _render_templates(agent_data)
 
-    # 3. Write everything to disk
+    # 4. Write everything to disk
     agent_dir = _write_agent_folder(agent_name, rendered, agent_data, output_path)
 
     return {
